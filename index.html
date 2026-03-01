@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnets de Voyage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Josefin+Sans:wght@300;400&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ÉCRAN D'ACCUEIL -->
+<div id="screen-home" class="screen active">
+  <div class="home-bg">
+    <div class="deco-border-top"></div>
+    <div class="home-content">
+      <div class="home-ornament">✦ ✦ ✦</div>
+      <h1 class="home-title">Carnets<br><em>de Voyage</em></h1>
+      <p class="home-subtitle">Vos souvenirs, vos découvertes, vos rencontres</p>
+      <div class="home-divider"><span></span><span class="diamond">◆</span><span></span></div>
+      <div class="voyages-list" id="voyages-list"></div>
+      <button class="btn-primary" id="btn-nouveau-voyage">
+        <span>+ Nouveau Voyage</span>
+      </button>
+    </div>
+    <div class="deco-border-bottom"></div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU VOYAGE -->
+<div id="modal-nouveau" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-deco-top"></div>
+    <button class="modal-close" id="close-nouveau">✕</button>
+    <h2 class="modal-title">Nouveau Voyage</h2>
+    <div class="form-group">
+      <label>Destination</label>
+      <input type="text" id="input-destination" placeholder="Paris, Tokyo, Lisbonne…" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Départ</label>
+        <input type="date" id="input-depart" />
+      </div>
+      <div class="form-group">
+        <label>Retour</label>
+        <input type="date" id="input-retour" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Emoji / Icône</label>
+      <div class="emoji-picker" id="emoji-picker">
+        <span class="emoji-opt selected" data-e="✈️">✈️</span>
+        <span class="emoji-opt" data-e="🚂">🚂</span>
+        <span class="emoji-opt" data-e="⛵">⛵</span>
+        <span class="emoji-opt" data-e="🏔️">🏔️</span>
+        <span class="emoji-opt" data-e="🏖️">🏖️</span>
+        <span class="emoji-opt" data-e="🌆">🌆</span>
+        <span class="emoji-opt" data-e="🌿">🌿</span>
+        <span class="emoji-opt" data-e="🎭">🎭</span>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-creer-voyage">Créer le voyage</button>
+    <div class="modal-deco-bottom"></div>
+  </div>
+</div>
+
+<!-- ÉCRAN VOYAGE -->
+<div id="screen-voyage" class="screen hidden">
+  <header class="voyage-header">
+    <button class="back-btn" id="btn-retour-home">← Mes Voyages</button>
+    <div class="voyage-header-center">
+      <span id="header-emoji"></span>
+      <h2 id="header-titre"></h2>
+      <small id="header-dates"></small>
+    </div>
+    <button class="btn-icon" id="btn-delete-voyage" title="Supprimer le voyage">🗑</button>
+  </header>
+
+  <nav class="voyage-nav">
+    <button class="nav-tab active" data-tab="carte">🗺 Carte</button>
+    <button class="nav-tab" data-tab="journal">📖 Journal</button>
+    <button class="nav-tab" data-tab="rencontres">🤝 Rencontres</button>
+    <button class="nav-tab" data-tab="docs">📁 Documents</button>
+  </nav>
+
+  <!-- ONGLET CARTE -->
+  <div id="tab-carte" class="tab-content active">
+    <div id="map"></div>
+    <div class="map-toolbar">
+      <button class="map-btn active" data-type="hebergement" title="Hébergement">🏠</button>
+      <button class="map-btn" data-type="transport" title="Transport">🚇</button>
+      <button class="map-btn" data-type="visite" title="À visiter">🏛</button>
+      <button class="map-btn" data-type="restaurant" title="Restaurant">🍽</button>
+      <button class="map-btn" data-type="photo" title="Souvenir photo">📸</button>
+    </div>
+    <div class="map-legend">
+      <small>Sélectionnez un type puis cliquez sur la carte pour ajouter un lieu</small>
+    </div>
+  </div>
+
+  <!-- ONGLET JOURNAL -->
+  <div id="tab-journal" class="tab-content hidden">
+    <div class="tab-inner">
+      <div class="section-header">
+        <h3>Journal de bord</h3>
+        <button class="btn-add" id="btn-add-entry">+ Nouvelle entrée</button>
+      </div>
+      <div id="journal-entries"></div>
+    </div>
+  </div>
+
+  <!-- ONGLET RENCONTRES -->
+  <div id="tab-rencontres" class="tab-content hidden">
+    <div class="tab-inner">
+      <div class="section-header">
+        <h3>Rencontres &amp; Contacts</h3>
+        <button class="btn-add" id="btn-add-contact">+ Ajouter</button>
+      </div>
+      <div id="contacts-list"></div>
+    </div>
+  </div>
+
+  <!-- ONGLET DOCUMENTS -->
+  <div id="tab-docs" class="tab-content hidden">
+    <div class="tab-inner">
+      <div class="section-header">
+        <h3>Documents &amp; Billets</h3>
+        <label class="btn-add" for="input-doc-upload">+ Ajouter un fichier</label>
+        <input type="file" id="input-doc-upload" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple style="display:none">
+      </div>
+      <div id="docs-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIEU (carte) -->
+<div id="modal-lieu" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-deco-top"></div>
+    <button class="modal-close" id="close-lieu">✕</button>
+    <h2 class="modal-title" id="lieu-modal-title">Nouveau lieu</h2>
+    <div class="form-group">
+      <label>Nom</label>
+      <input type="text" id="lieu-nom" placeholder="Nom du lieu…" />
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="lieu-notes" placeholder="Horaires, recommandations…"></textarea>
+    </div>
+    <div class="form-group" id="lieu-photo-group">
+      <label>Photo souvenir</label>
+      <label class="btn-upload" for="lieu-photo-input">📷 Choisir une photo</label>
+      <input type="file" id="lieu-photo-input" accept="image/*" style="display:none">
+      <img id="lieu-photo-preview" src="" style="display:none; max-width:100%; border-radius:4px; margin-top:8px;" />
+    </div>
+    <button class="btn-primary" id="btn-save-lieu">Enregistrer</button>
+    <div class="modal-deco-bottom"></div>
+  </div>
+</div>
+
+<!-- MODAL JOURNAL ENTRY -->
+<div id="modal-entry" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-deco-top"></div>
+    <button class="modal-close" id="close-entry">✕</button>
+    <h2 class="modal-title" id="entry-modal-title">Entrée de journal</h2>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="entry-date" />
+    </div>
+    <div class="form-group">
+      <label>Titre de la journée</label>
+      <input type="text" id="entry-titre" placeholder="Une belle journée à…" />
+    </div>
+    <div class="form-group">
+      <label>Récit</label>
+      <textarea id="entry-texte" placeholder="Raconte ta journée…" rows="8"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Humeur</label>
+      <div class="emoji-picker" id="mood-picker">
+        <span class="emoji-opt selected" data-e="😊">😊</span>
+        <span class="emoji-opt" data-e="🤩">🤩</span>
+        <span class="emoji-opt" data-e="😌">😌</span>
+        <span class="emoji-opt" data-e="🥱">🥱</span>
+        <span class="emoji-opt" data-e="😅">😅</span>
+        <span class="emoji-opt" data-e="🫠">🫠</span>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-save-entry">Enregistrer</button>
+    <div class="modal-deco-bottom"></div>
+  </div>
+</div>
+
+<!-- MODAL CONTACT -->
+<div id="modal-contact" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-deco-top"></div>
+    <button class="modal-close" id="close-contact">✕</button>
+    <h2 class="modal-title">Nouvelle rencontre</h2>
+    <div class="form-group">
+      <label>Prénom / Nom</label>
+      <input type="text" id="contact-nom" placeholder="Alex, Maria…" />
+    </div>
+    <div class="form-group">
+      <label>Nationalité / Ville</label>
+      <input type="text" id="contact-origine" placeholder="Berlinois, guide local…" />
+    </div>
+    <div class="form-group">
+      <label>Contact (email, insta…)</label>
+      <input type="text" id="contact-info" placeholder="@pseudo, email…" />
+    </div>
+    <div class="form-group">
+      <label>Souvenir / anecdote</label>
+      <textarea id="contact-note" placeholder="Comment vous vous êtes rencontrés…"></textarea>
+    </div>
+    <button class="btn-primary" id="btn-save-contact">Enregistrer</button>
+    <div class="modal-deco-bottom"></div>
+  </div>
+</div>
+
+<!-- PDF VIEWER MODAL -->
+<div id="modal-viewer" class="modal-overlay hidden">
+  <div class="modal modal-viewer">
+    <button class="modal-close" id="close-viewer">✕</button>
+    <div id="viewer-content"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
